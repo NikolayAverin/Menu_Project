@@ -1,36 +1,30 @@
 from django import template
-from django.template.context_processors import request
-from django.urls import resolve
 from menu.models import Menu
 
 
 register = template.Library()
 
-def get_current_menu(request):
-    """Получение текущего меню."""
-    current_url = request.path
-    return Menu.objects.filter(url=current_url).first()
+def get_active_menus(menu_title, current_path):
+    """Получаем активные меню."""
+    active_menus = set()
+    menus = Menu.objects.filter(title=menu_title)
 
-def generate_menu(menu_title, active_menu):
-    """Генерирование меню."""
-    menu_items = Menu.objects.filter(parent__isnull=True)
+    for menu in menus:
+        if menu.url == current_path:
+            active_menus.add(menu)
+            while menu.parent:
+                menu = menu.parent
+                active_menus.add(menu)
 
-    active_menus = []
-    if active_menu:
-        active_menus.append(active_menu)
-        while active_menu.parent:
-            active_menu = active_menu.parent
-            active_menus.append(active_menu)
+    return active_menus
 
-    return {
-        "menu_items": menu_items,
-        "active_menus": active_menus,
-        "menu_title": menu_title,
-    }
-
-@register.simple_tag(takes_context=True)
+@register.inclusion_tag('menu/menu.html', takes_context=True)
 def draw_menu(context, menu_title):
-    """Вызов сгенерированного меню."""
-    request = context["request"]
-    current_menu = get_current_menu(request)
-    return generate_menu(menu_title, current_menu)
+    """Тэг для вставки меню."""
+    current_path = context["request"].path
+    active_menus = get_active_menus(menu_title, current_path)
+    menus = Menu.objects.filter(title=menu_title)
+    return {
+        "menus": menus,
+        "active_menus": active_menus
+    }

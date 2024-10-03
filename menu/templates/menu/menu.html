@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<ul>
+    {% for menu in menus %}
+        <li class="{% if menu in active_menus %}active{% endif %}">
+            <a href="{{ menu.url }}">{{ menu.title }}</a>
+            {% if menu.children.all %}
+                {% include 'menu/menu.html' with menus=menu.children.all %}
+            {% endif %}
+        </li>
+    {% endfor %}
+</ul>
+</body>
+</html>
